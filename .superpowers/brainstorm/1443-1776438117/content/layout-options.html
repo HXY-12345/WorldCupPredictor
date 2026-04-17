@@ -1,0 +1,87 @@
+<h2>首页布局选择</h2>
+<p class="subtitle">选择一种页面结构，这将影响用户查看赛程和比分的方式</p>
+
+<div class="options">
+  <div class="option" data-choice="single" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>单列垂直布局</h3>
+      <p>所有比赛按时间顺序垂直排列，适合快速浏览，移动端友好</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;gap:8px;">
+          <div style="border:1px solid #ddd;padding:10px;border-radius:6px;background:#f9f9f9;">
+            <div style="font-size:11px;color:#666;">今天 19:00</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+              <span>巴西 🇧🇷</span>
+              <span style="font-weight:bold;">VS</span>
+              <span>克罗地亚 🇭🇷</span>
+            </div>
+            <div style="font-size:11px;color:#0066cc;margin-top:4px;">AI预测: 2-1</div>
+          </div>
+          <div style="border:1px solid #ddd;padding:10px;border-radius:6px;background:#f9f9f9;">
+            <div style="font-size:11px;color:#666;">今天 22:00</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+              <span>阿根廷 🇦🇷</span>
+              <span style="font-weight:bold;">VS</span>
+              <span>荷兰 🇳🇱</span>
+            </div>
+            <div style="font-size:11px;color:#0066cc;margin-top:4px;">AI预测: 1-1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="grouped" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>分组日期布局</h3>
+      <p>按日期分组展示，可展开/折叠，适合查看多天赛程</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;gap:8px;">
+          <div style="background:#0066cc;color:white;padding:8px 12px;border-radius:6px;font-size:13px;">
+            📅 4月18日 周五 ▼
+          </div>
+          <div style="padding-left:12px;gap:6px;">
+            <div style="border:1px solid #ddd;padding:8px;border-radius:6px;background:#fff;font-size:12px;">
+              19:00 巴西 vs 克罗地亚
+            </div>
+            <div style="border:1px solid #ddd;padding:8px;border-radius:6px;background:#fff;font-size:12px;">
+              22:00 阿根廷 vs 荷兰
+            </div>
+          </div>
+          <div style="background:#eee;color:#666;padding:8px 12px;border-radius:6px;font-size:13px;">
+            📅 4月19日 周六 ▶
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="card" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>卡片网格布局</h3>
+      <p>每场比赛一张卡片，网格排列，视觉冲击力强，适合桌面端</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="border:1px solid #ddd;padding:10px;border-radius:8px;background:#f9f9f9;text-align:center;">
+              <div style="font-size:10px;color:#666;">19:00</div>
+              <div style="font-size:14px;margin:6px 0;">巴西 🇧🇷 vs 克罗地亚 🇭🇷</div>
+              <div style="font-size:11px;color:#0066cc;">预测 2-1</div>
+            </div>
+            <div style="border:1px solid #ddd;padding:10px;border-radius:8px;background:#f9f9f9;text-align:center;">
+              <div style="font-size:10px;color:#666;">22:00</div>
+              <div style="font-size:14px;margin:6px 0;">阿根廷 🇦🇷 vs 荷兰 🇳🇱</div>
+              <div style="font-size:11px;color:#0066cc;">预测 1-1</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

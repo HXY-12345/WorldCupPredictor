@@ -1,0 +1,90 @@
+<h2>比赛卡片详情程度</h2>
+<p class="subtitle">选择卡片中展示的信息量，平衡简洁性和实用性</p>
+
+<div class="options">
+  <div class="option" data-choice="simple" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>极简模式</h3>
+      <p>只显示基本信息：时间、球队、比分/预测</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;">
+          <div style="border:1px solid #ddd;padding:12px;border-radius:8px;background:#fff;">
+            <div style="color:#666;font-size:12px;margin-bottom:8px;">4月18日 19:00</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:16px;">
+              <span>巴西 🇧🇷</span>
+              <span style="color:#999;">vs</span>
+              <span>克罗地亚 🇭🇷</span>
+            </div>
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #eee;">
+              <span style="color:#0066cc;font-size:13px;">🤖 AI预测: 2-1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="standard" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>标准模式</h3>
+      <p>额外显示：比赛阶段、场地、预测置信度</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;">
+          <div style="border:1px solid #ddd;padding:12px;border-radius:8px;background:#fff;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">小组赛 A组</span>
+              <span style="color:#666;font-size:12px;">19:00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:16px;margin-bottom:8px;">
+              <span>巴西 🇧🇷</span>
+              <span style="color:#999;">vs</span>
+              <span>克罗地亚 🇭🇷</span>
+            </div>
+            <div style="color:#999;font-size:11px;margin-bottom:8px;">📍 卢赛尔体育场</div>
+            <div style="padding-top:8px;border-top:1px dashed #eee;">
+              <span style="color:#0066cc;font-size:13px;">🤖 AI预测: 2-1</span>
+              <span style="color:#999;font-size:11px;margin-left:8px;">置信度 72%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="rich" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>丰富模式</h3>
+      <p>包含：历史交锋、球队排名、关键球员、详细分析</p>
+      <div class="mockup">
+        <div class="mockup-header">预览</div>
+        <div class="mockup-body" style="padding:12px;">
+          <div style="border:1px solid #ddd;padding:12px;border-radius:8px;background:#fff;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+              <span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">小组赛 A组</span>
+              <span style="color:#666;font-size:12px;">19:00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:16px;margin-bottom:8px;">
+              <span>巴西 🇧🇷 <span style="font-size:11px;color:#999;">#3</span></span>
+              <span style="color:#999;">vs</span>
+              <span>克罗地亚 🇭🇷 <span style="font-size:11px;color:#999;">#12</span></span>
+            </div>
+            <div style="color:#999;font-size:11px;margin-bottom:8px;">📍 卢赛尔体育场</div>
+            <div style="background:#f5f5f5;padding:8px;border-radius:4px;font-size:11px;margin-bottom:8px;">
+              <div>📊 历史交锋: 巴西 3胜 1平 1负</div>
+              <div>⚠️ 内马尔伤疑出战</div>
+            </div>
+            <div style="padding-top:8px;border-top:1px dashed #eee;">
+              <span style="color:#0066cc;font-size:13px;">🤖 AI预测: 2-1</span>
+              <span style="color:#999;font-size:11px;margin-left:8px;">置信度 72%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

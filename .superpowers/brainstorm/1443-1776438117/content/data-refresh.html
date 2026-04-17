@@ -1,0 +1,97 @@
+<h2>数据更新策略</h2>
+<p class="subtitle">选择获取最新赛程和比分的方式</p>
+
+<div class="options">
+  <div class="option" data-choice="poll" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>定时轮询</h3>
+      <p>前端每隔一段时间自动请求后端获取最新数据</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>✓ 优点</h4>
+          <ul>
+            <li>实现简单</li>
+            <li>兼容性好</li>
+            <li>无状态，易扩展</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>✗ 缺点</h4>
+          <ul>
+            <li>有延迟（轮询间隔）</li>
+            <li>可能产生无效请求</li>
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <span class="label">示例</span>
+        <code style="display:block;padding:8px;background:#f5f5f5;border-radius:4px;font-size:11px;margin-top:4px;">
+          每 30 秒请求一次后端接口
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="sse" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>SSE 推送</h3>
+      <p>后端有新数据时主动推送给前端</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>✓ 优点</h4>
+          <ul>
+            <li>实时性强</li>
+            <li>节省带宽</li>
+            <li>自动重连</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>✗ 缺点</h4>
+          <ul>
+            <li>需要保持连接</li>
+                            <li>实现稍复杂</li>
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <span class="label">示例</span>
+        <code style="display:block;padding:8px;background:#f5f5f5;border-radius:4px;font-size:11px;margin-top:4px;">
+          EventSource 连接，有比分变化立即推送
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="manual" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>手动刷新</h3>
+      <p>用户主动点击刷新按钮获取最新数据</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>✓ 优点</h4>
+          <ul>
+            <li>最简单</li>
+            <li>无服务器压力</li>
+                            <li>用户可控</li>
+          </ul>
+                        </div>
+        <div class="cons">
+          <h4>✗ 缺点</h4>
+          <ul>
+            <li>不是真正的实时</li>
+            <li>需要用户操作</li>
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <span class="label">示例</span>
+        <code style="display:block;padding:8px;background:#f5f5f5;border-radius:4px;font-size:11px;margin-top:4px;">
+          点击 "刷新" 按钮更新数据
+        </code>
+      </div>
+    </div>
+  </div>
+</div>

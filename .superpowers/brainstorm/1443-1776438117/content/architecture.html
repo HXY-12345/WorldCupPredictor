@@ -1,0 +1,150 @@
+<h2>系统架构设计</h2>
+<p class="subtitle">简约 MVP 方案 - 前后端分离架构</p>
+
+<div class="mockup">
+  <div class="mockup-header">系统架构图</div>
+  <div class="mockup-body" style="padding:20px;background:#f8f9fa;font-family:monospace;font-size:12px;">
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:30px;margin-bottom:30px;">
+      <!-- 浏览器 -->
+      <div style="background:#fff;border:2px solid #1a237e;border-radius:8px;padding:16px;width:180px;text-align:center;">
+        <div style="color:#1a237e;font-weight:bold;margin-bottom:8px;">🌐 浏览器</div>
+        <div style="background:#f5f5f5;padding:8px;border-radius:4px;font-size:11px;text-align:left;">
+          <div style="color:#666;">index.html</div>
+          <div style="color:#666;">style.css</div>
+          <div style="color:#666;">app.js</div>
+          <div style="margin-top:6px;color:#0d47a1;">• 赛程展示</div>
+          <div style="color:#0d47a1;">• 比分卡片</div>
+          <div style="color:#0d47a1;">• AI预测</div>
+          <div style="color:#0d47a1;">• 30s轮询</div>
+        </div>
+      </div>
+
+      <div style="color:#999;font-size:24px;">⇄</div>
+
+      <!-- 后端 API -->
+      <div style="background:#fff;border:2px solid #4caf50;border-radius:8px;padding:16px;width:200px;text-align:center;">
+        <div style="color:#4caf50;font-weight:bold;margin-bottom:8px;">🚀 FastAPI</div>
+        <div style="background:#f5f5f5;padding:8px;border-radius:4px;font-size:11px;text-align:left;">
+          <div style="color:#666;">/api/matches</div>
+          <div style="color:#666;">/api/predict</div>
+          <div style="color:#666;">/api/refresh</div>
+          <div style="margin-top:6px;color:#4caf50;">• 爬虫调度</div>
+          <div style="color:#4caf50;">• AI调用</div>
+          <div style="color:#4caf50;">• 数据缓存</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:60px;">
+      <!-- 数据源 -->
+      <div style="text-align:center;">
+        <div style="background:#fff;border:2px solid #ff9800;border-radius:8px;padding:12px;width:140px;display:inline-block;">
+          <div style="color:#ff9800;font-weight:bold;">📡 爬虫</div>
+          <div style="font-size:10px;color:#666;margin-top:4px;">官网/媒体</div>
+        </div>
+        <div style="color:#999;font-size:18px;margin-top:8px;">↓</div>
+      </div>
+
+      <!-- AI -->
+      <div style="text-align:center;">
+        <div style="background:#fff;border:2px solid #9c27b0;border-radius:8px;padding:12px;width:140px;display:inline-block;">
+          <div style="color:#9c27b0;font-weight:bold;">🤖 大模型</div>
+          <div style="font-size:10px;color:#666;margin-top:4px;">Claude/GPT API</div>
+        </div>
+        <div style="color:#999;font-size:18px;margin-top:8px;">↓</div>
+      </div>
+
+      <!-- 存储 -->
+      <div style="background:#fff;border:2px solid #607d8b;border-radius:8px;padding:12px;width:140px;text-align:center;">
+        <div style="color:#607d8b;font-weight:bold;">💾 存储</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">SQLite / JSON</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>目录结构</h3>
+  <pre style="background:#2d2d2d;color:#f8f8f2;padding:16px;border-radius:8px;font-size:12px;overflow-x:auto;">
+worldcup/
+├── frontend/              # 前端 (纯 HTML/CSS/JS)
+│   ├── index.html         # 主页
+│   ├── css/
+│   │   ├── reset.css      # 重置样式
+│   │   ├── variables.css  # 颜色变量 (蓝绿体育风)
+│   │   └── style.css      # 主样式
+│   └── js/
+│       ├── api.js         # API 调用
+│       ├── ui.js          # UI 交互
+│       └── app.js         # 主入口
+│
+├── backend/               # 后端 (FastAPI + Python)
+│   ├── main.py            # FastAPI 应用入口
+│   ├── api/               # API 路由
+│   │   ├── matches.py     # 赛程接口
+│   │   └── predict.py     # 预测接口
+│   ├── crawler/           # 爬虫模块
+│   │   ├── base.py        # 基础爬虫类
+│   │   └── sources/       # 各数据源爬虫
+│   ├── ai/                # AI 模块
+│   │   ├── client.py      # 大模型 API 客户端
+│   │   └── prompts.py     # 预测提示词模板
+│   └── data/              # 数据存储
+│       ├── matches.db     # SQLite 数据库
+│       └── cache/         # 预测结果缓存
+│
+└── requirements.txt       # Python 依赖
+  </pre>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>核心功能模块</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="background:#f5f5f5;padding:16px;border-radius:8px;border-left:4px solid #1a237e;">
+      <h4 style="margin:0 0 8px 0;color:#1a237e;">前端功能</h4>
+      <ul style="margin:0;font-size:13px;color:#666;">
+        <li>分组日期赛程展示（可展开/折叠）</li>
+        <li>丰富模式比赛卡片</li>
+        <li>记分牌式 AI 预测展示</li>
+        <li>30 秒自动轮询刷新</li>
+        <li>手动刷新按钮</li>
+        <li>加载状态与错误提示</li>
+      </ul>
+    </div>
+    <div style="background:#f5f5f5;padding:16px;border-radius:8px;border-left:4px solid #4caf50;">
+      <h4 style="margin:0 0 8px 0;color:#4caf50;">后端功能</h4>
+      <ul style="margin:0;font-size:13px;color:#666;">
+        <li>RESTful API 接口</li>
+        <li>定时爬取赛程比分数据</li>
+        <li>调用大模型生成预测</li>
+        <li>预测结果缓存（避免重复调用）</li>
+        <li>CORS 跨域支持</li>
+        <li>数据验证与错误处理</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>API 设计（草案）</h3>
+  <div style="background:#f5f5f5;padding:16px;border-radius:8px;font-size:12px;">
+    <div style="margin-bottom:12px;">
+      <code style="background:#2d2d2d;color:#4caf50;padding:4px 8px;border-radius:4px;">GET /api/matches</code>
+      <div style="color:#666;margin-left:12px;margin-top:4px;">→ 返回所有比赛数据（赛程+比分+预测）</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <code style="background:#2d2d2d;color:#ff9800;padding:4px 8px;border-radius:4px;">POST /api/predict/:match_id</code>
+      <div style="color:#666;margin-left:12px;margin-top:4px;">→ 触发 AI 预测指定比赛</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <code style="background:#2d2d2d;color:#607d8b;padding:4px 8px;border-radius:4px;">POST /api/refresh</code>
+      <div style="color:#666;margin-left:12px;margin-top:4px;">→ 手动触发爬虫更新数据</div>
+    </div>
+    <div>
+      <code style="background:#2d2d2d;color:#9c27b0;padding:4px 8px;border-radius:4px;">GET /api/health</code>
+      <div style="color:#666;margin-left:12px;margin-top:4px;">→ 健康检查</div>
+    </div>
+  </div>
+</div>

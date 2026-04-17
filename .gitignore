@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 项目特定
+.superpowers/
+.agents/
+.claude/skills/
+backend/data/*.db
+backend/data/cache/
+
+# 敏感信息
+.env
+*.env
