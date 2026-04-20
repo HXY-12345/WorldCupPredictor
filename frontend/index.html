@@ -1,0 +1,116 @@
+<!-- 核心功能：定义世界杯预测首页结构，承载日历赛程、比赛卡片、统计模块和前端脚本入口。 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="worldcup-api-base-url" content="" />
+    <title>世界杯比分预测看板</title>
+    <meta
+      name="description"
+      content="世界杯比分预测智能体前端看板，展示赛程、比分、历史交锋和 AI 预测。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/reset.css" />
+    <link rel="stylesheet" href="./css/variables.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero__content">
+          <p class="hero__eyebrow">World Cup 2026 Match Center</p>
+          <h1>世界杯比分预测看板</h1>
+          <p class="hero__summary">
+            用一个页面集中查看赛程、即时比分、交锋背景和 AI 比分预测。
+          </p>
+          <div class="hero__tags" aria-label="功能摘要">
+            <span class="hero-tag">30 秒轮询</span>
+            <span class="hero-tag">实时赛程</span>
+            <span class="hero-tag">AI 比分牌</span>
+          </div>
+        </div>
+
+        <aside class="score-panel" aria-label="数据摘要">
+          <div class="score-panel__top">
+            <div>
+              <p class="score-panel__label">数据源</p>
+              <p class="score-panel__value" id="feedStatus">待连接</p>
+            </div>
+            <button type="button" class="primary-button" data-action="refresh">
+              刷新赛程
+            </button>
+          </div>
+
+          <dl class="score-panel__stats">
+            <div>
+              <dt>最后更新</dt>
+              <dd id="lastUpdated">--</dd>
+            </div>
+            <div>
+              <dt>赛事数量</dt>
+              <dd id="matchCount">0</dd>
+            </div>
+            <div>
+              <dt>轮询状态</dt>
+              <dd id="pollStatus">待启动</dd>
+            </div>
+          </dl>
+        </aside>
+      </header>
+
+      <main class="dashboard">
+        <section id="noticeRegion" class="notice-region" aria-live="polite"></section>
+
+        <section class="calendar-panel" aria-labelledby="calendarTitle">
+          <div class="section-heading section-heading--stacked">
+            <div>
+              <p class="section-heading__eyebrow">Calendar View</p>
+              <h2 id="calendarTitle">按日期查看 FIFA 官方赛程</h2>
+            </div>
+            <p class="section-heading__meta">
+              点击任一比赛日，主页下方会切换到该日期的比赛与预测卡片。
+            </p>
+          </div>
+
+          <div id="calendarRegion" class="calendar-region" aria-live="polite"></div>
+        </section>
+
+        <section class="analytics-panel" aria-labelledby="analyticsTitle">
+          <div class="section-heading">
+            <div>
+              <p class="section-heading__eyebrow">Prediction Analytics</p>
+              <h2 id="analyticsTitle">查看预测成功率与阶段统计</h2>
+            </div>
+            <p class="section-heading__meta">
+              这里直接消费后端评估与统计接口，展示总览命中率、分层结果和按阶段拆分。
+            </p>
+          </div>
+
+          <div id="analyticsRegion" class="analytics-region" aria-live="polite"></div>
+        </section>
+
+        <section class="schedule-panel" aria-labelledby="scheduleTitle">
+          <div class="section-heading">
+            <div>
+              <p class="section-heading__eyebrow">Fixture Timeline</p>
+              <h2 id="scheduleTitle">查看当日比赛与预测卡片</h2>
+            </div>
+            <p class="section-heading__meta">
+              赛程基于 FIFA 官方赛程页整理，卡片会保留日期折叠和预测按钮交互。
+            </p>
+          </div>
+
+          <div id="scheduleRegion" class="schedule-region" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

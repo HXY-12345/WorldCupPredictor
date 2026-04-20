@@ -7,6 +7,9 @@ __pycache__/
 venv/
 env/
 ENV/
+.conda/
+pytest_tmp/
+.pytest_tmp/
 
 # IDE
 .vscode/
@@ -24,7 +27,10 @@ Thumbs.db
 .claude/skills/
 backend/data/*.db
 backend/data/cache/
+backend/tests/runtime/
 
 # 敏感信息
 .env
 *.env
+backend/config/openrouter.key
+backend/config/openrouter.prediction.key

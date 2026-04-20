@@ -1,0 +1,11 @@
+{
+  "base_url": "https://openrouter.ai/api/v1/chat/completions",
+  "model": "qwen/qwen3.5-flash-20260224",
+  "temperature": 0.1,
+  "max_tokens": 800,
+  "http_referer": "http://127.0.0.1:3000",
+  "x_title": "WorldCup Predictor Prediction",
+  "enable_web_plugin": false,
+  "enable_response_healing": false,
+  "require_parameters": true
+}
