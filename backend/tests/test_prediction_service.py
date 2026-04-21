@@ -1,5 +1,6 @@
 """核心功能：验证预测服务可以消费 provider 输出并写入预测历史。"""
 
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 from uuid import uuid4
@@ -62,6 +63,10 @@ def _write_fixture(path: Path, *, status: str = "not_started") -> None:
         ),
         encoding="utf-8",
     )
+
+
+def _parse_iso_timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 class StaticPredictionProvider:
@@ -204,6 +209,41 @@ def test_create_prediction_persists_provider_output_and_history():
     assert len(versions) == 1
     assert versions[0].model_name == "static-test-model"
     assert versions[0].prediction["predicted_score"]["home"] == 3
+
+
+def test_create_prediction_uses_server_time_for_predicted_at():
+    runtime_dir = _runtime_dir("prediction_service_timestamp")
+    fixture_path = runtime_dir / "schedule.json"
+    _write_fixture(fixture_path)
+    database_path = runtime_dir / "prediction_service_timestamp.db"
+    settings = Settings(
+        database_url=f"sqlite:///{database_path}",
+        enable_fixture_seed=True,
+        fixture_seed_path=str(fixture_path),
+    )
+    app = create_app(settings)
+
+    started_at = datetime.now(UTC)
+    with TestClient(app):
+        prediction = create_prediction(
+            app.state.session_factory,
+            "fwc2026-m001",
+            provider=StaticPredictionProvider(),
+        )
+    finished_at = datetime.now(UTC)
+
+    predicted_at = _parse_iso_timestamp(prediction["model_meta"]["predicted_at"])
+
+    assert prediction["model_meta"]["predicted_at"] != "2026-04-19T12:00:00Z"
+    assert started_at <= predicted_at <= finished_at
+
+    with app.state.session_factory() as session:
+        version = session.scalar(
+            select(PredictionVersion).where(PredictionVersion.match_id == "fwc2026-m001")
+        )
+
+    assert version is not None
+    assert version.created_at == prediction["model_meta"]["predicted_at"]
 
 
 def test_create_prediction_rejects_invalid_provider_output_without_persisting():

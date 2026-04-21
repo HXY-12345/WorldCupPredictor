@@ -22,6 +22,7 @@ import httpx
 from sqlalchemy.orm import Session, sessionmaker
 
 from backend.core.config import Settings
+from backend.core.schedule_time import normalize_match_datetime_to_beijing
 from backend.llm.openrouter import OpenRouterClient, load_openrouter_settings
 from backend.models.match import Match
 import httpx
@@ -217,6 +218,8 @@ class OpenRouterScheduleParser:
                         "You extract the FIFA World Cup 2026 official match schedule. "
                         "Prefer FIFA official sources. If official source text is incomplete or unavailable, "
                         "you may use web search to fill gaps, but keep FIFA as the primary reference whenever possible. "
+                        "Return match date and time in Beijing time (Asia/Shanghai). "
+                        "Convert official kickoff times before outputting JSON. "
                         "Return only JSON that matches the provided schema."
                     ),
                 },
@@ -228,6 +231,7 @@ class OpenRouterScheduleParser:
                         f"- Current refresh mode is: {refresh_mode}.\n"
                         "- Use match ids like fwc2026-m001, fwc2026-m002, etc.\n"
                         "- Use ISO dates in YYYY-MM-DD.\n"
+                        "- Convert all kickoff dates and times to Beijing time (Asia/Shanghai) before returning date and time.\n"
                         "- Use status values such as not_started, in_progress, finished.\n"
                         "- Keep placeholder participants such as Winner Group A when official teams are not confirmed yet.\n"
                         "- Focus on the latest official facts: confirmed teams, kickoff corrections, venue corrections, match status, and final score.\n"
@@ -754,13 +758,19 @@ def _normalize_match_payload(session: Session, match_payload: dict[str, Any]) ->
     existing_match = session.get(Match, match_id) if match_id else None
     existing_payload = _serialize_existing_match(existing_match) if existing_match else {}
 
+    normalized_date, normalized_time = normalize_match_datetime_to_beijing(
+        match_payload.get("date", existing_payload.get("date")),
+        match_payload.get("time", existing_payload.get("time")),
+        match_payload.get("timezone", existing_payload.get("timezone")),
+    )
+
     return {
         "id": match_id,
         "official_match_number": match_payload.get("official_match_number", existing_payload.get("official_match_number")),
         "kickoff_label": match_payload.get("kickoff_label", existing_payload.get("kickoff_label")),
         "sort_order": match_payload.get("sort_order", existing_payload.get("sort_order", 0)),
-        "date": match_payload.get("date", existing_payload.get("date")),
-        "time": match_payload.get("time", existing_payload.get("time")),
+        "date": normalized_date,
+        "time": normalized_time,
         "stage": match_payload.get("stage", existing_payload.get("stage")),
         "group": _normalize_group_value(match_payload.get("group", existing_payload.get("group"))),
         "venue": match_payload.get("venue", existing_payload.get("venue")),
@@ -827,6 +837,7 @@ def _serialize_existing_match(match: Match) -> dict[str, Any]:
         "sort_order": match.sort_order,
         "date": match.date,
         "time": match.time,
+        "timezone": "Asia/Shanghai",
         "stage": match.stage,
         "group": match.group_name,
         "venue": match.venue,

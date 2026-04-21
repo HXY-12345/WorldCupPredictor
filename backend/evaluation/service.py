@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from backend.core.schedule_time import resolve_stored_match_kickoff_to_utc
 from backend.evaluation.scorer import RULE_VERSION, score_prediction
 from backend.models.match import Match
 from backend.models.match_evaluation import MatchEvaluation
@@ -148,13 +149,7 @@ def _select_official_prediction_version(session: Session, match: Match) -> Predi
 
 
 def _resolve_kickoff_datetime(match: Match) -> datetime | None:
-    if not match.date:
-        return None
-
-    time_value = match.time or "23:59:59"
-    if len(time_value) == 5:
-        time_value = f"{time_value}:00"
-    return _parse_datetime(f"{match.date}T{time_value}")
+    return resolve_stored_match_kickoff_to_utc(match.date, match.time)
 
 
 def _parse_datetime(raw_value: str | None) -> datetime | None:

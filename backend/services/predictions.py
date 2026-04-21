@@ -1,5 +1,6 @@
 """核心功能：实现比赛预测生成、校验与预测版本化落库。"""
 
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import func, select
@@ -37,6 +38,7 @@ def create_prediction(
             raise MatchNotFoundError(f"Match '{match_id}' was not found.")
         if match.status != "not_started":
             raise MatchNotPredictableError("Predictions are only allowed before kickoff.")
+        predicted_at = datetime.now(UTC).isoformat()
 
         next_version_no = (
             session.scalar(
@@ -52,10 +54,11 @@ def create_prediction(
         prediction_output = active_provider.predict(prediction_request)
         parsed_prediction = parse_prediction_output(prediction_output)
         prediction = parsed_prediction.model_dump(mode="json")
+        prediction["model_meta"]["predicted_at"] = predicted_at
         prediction_version = PredictionVersion(
             match_id=match_id,
             version_no=next_version_no,
-            created_at=prediction["model_meta"]["predicted_at"],
+            created_at=predicted_at,
             model_name=prediction["model_meta"]["model_name"],
             prediction=prediction,
         )

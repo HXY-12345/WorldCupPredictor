@@ -12,6 +12,59 @@ const STATUS_META = {
   finished: { label: "已结束", tone: "finished" },
   postponed: { label: "已延期", tone: "postponed" }
 };
+const BEIJING_TIME_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
+
+const CALENDAR_STAGE_META = [
+  {
+    tone: "group-stage",
+    label: "小组赛",
+    rank: 1,
+    patterns: ["小组赛", "group stage"]
+  },
+  {
+    tone: "round-of-32",
+    label: "32强",
+    rank: 2,
+    patterns: ["32强赛", "32强", "round of 32", "last 32", "round-of-32"]
+  },
+  {
+    tone: "round-of-16",
+    label: "16强",
+    rank: 3,
+    patterns: ["16强赛", "16强", "round of 16", "last 16", "round-of-16"]
+  },
+  {
+    tone: "quarter-finals",
+    label: "1/4决赛",
+    rank: 4,
+    patterns: ["1/4 决赛", "1/4决赛", "quarter-final", "quarter final", "quarter-finals"]
+  },
+  {
+    tone: "semi-finals",
+    label: "半决赛",
+    rank: 5,
+    patterns: ["半决赛", "semi-final", "semi final", "semi-finals"]
+  },
+  {
+    tone: "semi-finals",
+    label: "季军赛",
+    rank: 5,
+    patterns: ["季军赛", "third-place", "third place", "third-place play-off", "third place play-off"]
+  },
+  {
+    tone: "final",
+    label: "决赛",
+    rank: 6,
+    patterns: ["决赛", "final"]
+  }
+];
 
 function safeArray(value) {
   return Array.isArray(value) ? value : [];
@@ -22,10 +75,6 @@ function compareMatchDateTime(left, right) {
     return left.date.localeCompare(right.date);
   }
 
-  if (typeof left.sort_order === "number" && typeof right.sort_order === "number") {
-    return left.sort_order - right.sort_order;
-  }
-
   const leftStamp = `${left.date}T${
     typeof left.time === "string" && /^\d{2}:\d{2}$/.test(left.time) ? left.time : "99:99"
   }:00`;
@@ -33,7 +82,16 @@ function compareMatchDateTime(left, right) {
     typeof right.time === "string" && /^\d{2}:\d{2}$/.test(right.time) ? right.time : "99:99"
   }:00`;
 
-  return leftStamp.localeCompare(rightStamp);
+  const timeCompare = leftStamp.localeCompare(rightStamp);
+  if (timeCompare !== 0) {
+    return timeCompare;
+  }
+
+  if (typeof left.sort_order === "number" && typeof right.sort_order === "number") {
+    return left.sort_order - right.sort_order;
+  }
+
+  return String(left.id ?? "").localeCompare(String(right.id ?? ""));
 }
 
 function renderScore(match) {
@@ -269,6 +327,7 @@ function renderSupportingInfo(match) {
 
   return `
     <div class="match-card__supporting">
+      <p class="support-chip"><strong>场次编号：</strong>${escapeHtml(match.kickoff_label ?? "--")}</p>
       <p class="support-chip"><strong>比赛场地：</strong>${escapeHtml(match.venue ?? "待定")}</p>
       <p class="support-chip"><strong>历史交锋：</strong>${escapeHtml(historyText)}</p>
       <p class="support-chip">
@@ -293,7 +352,7 @@ function renderSupportingInfo(match) {
 function renderMatchCard(match, pendingPredictionId) {
   const statusMeta = getStatusMeta(match.status);
   const score = renderScore(match);
-  const timeLabel = match.kickoff_label ?? match.time ?? "--:--";
+  const timeLabel = match.time ?? "--:--";
   const homeRank = Number.isFinite(match.home_team.fifa_rank)
     ? `<p class="team-row__rank">FIFA 排名 #${escapeHtml(match.home_team.fifa_rank)}</p>`
     : "";
@@ -522,10 +581,11 @@ export function formatUpdatedTime(value) {
     return "--";
   }
 
-  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(
-    2,
-    "0"
-  )}:${String(date.getMinutes()).padStart(2, "0")}`;
+  const parts = Object.fromEntries(
+    BEIJING_TIME_FORMATTER.formatToParts(date).map((part) => [part.type, part.value])
+  );
+
+  return `${parts.month}月${parts.day}日 ${parts.hour}:${parts.minute}`;
 }
 
 export function getStatusMeta(status) {
@@ -543,6 +603,41 @@ export function formatCalendarShortDate(isoDate) {
   };
 }
 
+function resolveCalendarStageMeta(matches) {
+  let resolvedMeta = {
+    stageTone: "general",
+    stageLabel: "赛程",
+    rank: 0
+  };
+
+  for (const match of safeArray(matches)) {
+    const stage = String(match?.stage ?? "").trim();
+    if (!stage) {
+      continue;
+    }
+
+    const normalizedStage = stage.toLowerCase();
+    const matchedMeta =
+      CALENDAR_STAGE_META.find((item) =>
+        item.patterns.some((pattern) => normalizedStage.includes(pattern))
+      ) ?? {
+        stageTone: "general",
+        stageLabel: stage,
+        rank: 0
+      };
+
+    if (matchedMeta.rank >= resolvedMeta.rank) {
+      resolvedMeta = {
+        stageTone: matchedMeta.tone ?? matchedMeta.stageTone,
+        stageLabel: matchedMeta.label ?? matchedMeta.stageLabel,
+        rank: matchedMeta.rank
+      };
+    }
+  }
+
+  return resolvedMeta;
+}
+
 export function groupMatchesByDate(matches) {
   const sortedMatches = [...safeArray(matches)].sort(compareMatchDateTime);
   const groups = new Map();
@@ -556,6 +651,7 @@ export function groupMatchesByDate(matches) {
   }
 
   return [...groups.entries()].map(([date, dateMatches]) => ({
+    ...resolveCalendarStageMeta(dateMatches),
     date,
     label: formatDisplayDate(date),
     matches: dateMatches
@@ -575,19 +671,33 @@ export function renderCalendarMarkup({ matches = [], selectedDate = null } = {})
         .map((group) => {
           const calendarDate = formatCalendarShortDate(group.date);
           const isActive = group.date === selectedDate;
+          const buttonClasses = [
+            "calendar-day-button",
+            isActive ? "is-active" : "",
+            `calendar-day-button--${group.stageTone}`
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const buttonLabel = `${group.label} ${group.stageLabel} ${group.matches.length} 场比赛`;
 
           return `
             <button
               type="button"
-              class="calendar-day-button ${isActive ? "is-active" : ""}"
+              class="${buttonClasses}"
               data-calendar-date="${group.date}"
               role="tab"
               aria-selected="${isActive ? "true" : "false"}"
+              aria-label="${escapeHtml(buttonLabel)}"
             >
-              <span class="calendar-day-button__month">${calendarDate.month}</span>
+              <span class="calendar-day-button__top">
+                <span class="calendar-day-button__month">${calendarDate.month}</span>
+                <span class="calendar-day-button__stage">${escapeHtml(group.stageLabel)}</span>
+              </span>
               <strong class="calendar-day-button__day">${calendarDate.day}</strong>
-              <span class="calendar-day-button__weekday">${calendarDate.weekday}</span>
-              <span class="calendar-day-button__count">${group.matches.length} 场</span>
+              <span class="calendar-day-button__footer">
+                <span class="calendar-day-button__weekday">${calendarDate.weekday}</span>
+                <span class="calendar-day-button__count">${group.matches.length} 场</span>
+              </span>
             </button>
           `;
         })

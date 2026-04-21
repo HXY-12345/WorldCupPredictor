@@ -159,6 +159,10 @@ def test_evaluate_match_uses_latest_pre_kickoff_prediction_version():
     runtime_dir = _runtime_dir("evaluation_latest_pre_kickoff")
     fixture_path = runtime_dir / "schedule.json"
     _write_fixture(fixture_path, status="finished", score={"home": 2, "away": 1})
+    fixture_payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    fixture_payload["matches"][0]["date"] = "2026-06-12"
+    fixture_payload["matches"][0]["time"] = "03:00"
+    fixture_path.write_text(json.dumps(fixture_payload), encoding="utf-8")
     database_path = runtime_dir / "evaluation_latest_pre_kickoff.db"
     settings = Settings(
         database_url=f"sqlite:///{database_path}",
@@ -174,23 +178,23 @@ def test_evaluate_match_uses_latest_pre_kickoff_prediction_version():
                     PredictionVersion(
                         match_id="fwc2026-m001",
                         version_no=1,
-                        created_at="2026-06-11T16:30:00Z",
+                        created_at="2026-06-11T18:30:00Z",
                         model_name="static-test-model",
-                        prediction=_prediction_payload(1, 0, "2026-06-11T16:30:00Z"),
+                        prediction=_prediction_payload(1, 0, "2026-06-11T18:30:00Z"),
                     ),
                     PredictionVersion(
                         match_id="fwc2026-m001",
                         version_no=2,
-                        created_at="2026-06-11T17:59:00Z",
+                        created_at="2026-06-11T18:59:00Z",
                         model_name="static-test-model",
-                        prediction=_prediction_payload(2, 1, "2026-06-11T17:59:00Z"),
+                        prediction=_prediction_payload(2, 1, "2026-06-11T18:59:00Z"),
                     ),
                     PredictionVersion(
                         match_id="fwc2026-m001",
                         version_no=3,
-                        created_at="2026-06-11T18:01:00Z",
+                        created_at="2026-06-11T19:01:00Z",
                         model_name="static-test-model",
-                        prediction=_prediction_payload(0, 0, "2026-06-11T18:01:00Z"),
+                        prediction=_prediction_payload(0, 0, "2026-06-11T19:01:00Z"),
                     ),
                 ]
             )
@@ -265,3 +269,48 @@ def test_evaluate_match_marks_pending_result_when_regular_time_score_is_missing(
     assert payload["actual_home_score"] is None
     assert payload["actual_away_score"] is None
     assert payload["grade"] is None
+
+
+def test_evaluate_match_treats_stored_kickoff_as_beijing_time():
+    runtime_dir = _runtime_dir("evaluation_beijing_cutoff")
+    fixture_path = runtime_dir / "schedule.json"
+    _write_fixture(fixture_path, status="finished", score={"home": 2, "away": 1})
+    fixture_payload = json.loads(fixture_path.read_text(encoding="utf-8"))
+    fixture_payload["matches"][0]["date"] = "2026-06-12"
+    fixture_payload["matches"][0]["time"] = "03:00"
+    fixture_path.write_text(json.dumps(fixture_payload), encoding="utf-8")
+    database_path = runtime_dir / "evaluation_beijing_cutoff.db"
+    settings = Settings(
+        database_url=f"sqlite:///{database_path}",
+        enable_fixture_seed=True,
+        fixture_seed_path=str(fixture_path),
+    )
+    app = create_app(settings)
+
+    with TestClient(app):
+        with app.state.session_factory() as session:
+            session.add_all(
+                [
+                    PredictionVersion(
+                        match_id="fwc2026-m001",
+                        version_no=1,
+                        created_at="2026-06-11T18:59:00Z",
+                        model_name="static-test-model",
+                        prediction=_prediction_payload(2, 1, "2026-06-11T18:59:00Z"),
+                    ),
+                    PredictionVersion(
+                        match_id="fwc2026-m001",
+                        version_no=2,
+                        created_at="2026-06-11T19:01:00Z",
+                        model_name="static-test-model",
+                        prediction=_prediction_payload(0, 0, "2026-06-11T19:01:00Z"),
+                    ),
+                ]
+            )
+            session.commit()
+
+        payload = evaluate_match(app.state.session_factory, "fwc2026-m001")
+
+    assert payload["evaluation_status"] == "scored"
+    assert payload["prediction_version_id"] == 1
+    assert payload["grade"] == "core_hit"

@@ -107,6 +107,8 @@ def test_incremental_refresh_normalizes_realistic_model_payload_before_upsert():
 
     assert sync_run.status == "completed"
     assert match.group_name == "A"
+    assert match.date == "2026-06-12"
+    assert match.time == "03:00"
     assert match.home_team["name"] == "Mexico"
     assert match.away_team["name"] == "South Africa"
     assert match.status == "finished"
