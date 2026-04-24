@@ -20,6 +20,10 @@ def build_prediction_system_prompt() -> str:
         "Return exactly one compact JSON object with these fields: predicted_score, outcome_pick, "
         "home_goals_pick, away_goals_pick, total_goals_pick, confidence, reasoning_summary, "
         "evidence_items, uncertainties, model_meta, input_snapshot.\n"
+        "input_snapshot must contain only the match_facts object, not instructions, database_context, "
+        "or the outer request payload.\n"
+        "Do not copy the outer request payload into input_snapshot.\n"
+        "Keep reasoning_summary concise and keep the whole JSON compact.\n"
         "evidence_items must contain 3 items grounded in the supplied facts.\n"
         "Do not output markdown or chain-of-thought."
     )
@@ -38,6 +42,8 @@ def build_prediction_user_prompt(context: PredictionContext) -> str:
             "Use the latest evidence available at prediction time.",
         ],
     }
+    if context.database_context:
+        payload["database_context"] = context.database_context
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
@@ -76,5 +82,6 @@ def build_prediction_request(
         metadata={
             "match_id": match_id,
             "match_facts": context.match_facts,
+            "database_context": context.database_context,
         },
     )

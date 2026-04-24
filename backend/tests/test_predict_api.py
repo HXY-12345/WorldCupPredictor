@@ -74,6 +74,47 @@ def _write_fixture(path: Path, *, status: str = "not_started") -> None:
     )
 
 
+class StaticPredictionProvider:
+    def predict(self, request):
+        match_facts = request.metadata["match_facts"]
+        return {
+            "predicted_score": {"home": 2, "away": 1},
+            "outcome_pick": "home_win",
+            "home_goals_pick": 2,
+            "away_goals_pick": 1,
+            "total_goals_pick": 3,
+            "confidence": 68,
+            "reasoning_summary": f"Static provider prediction for {match_facts['match_id']}.",
+            "evidence_items": [
+                {
+                    "claim": "Mexico has stronger recent form.",
+                    "source_name": "form",
+                    "source_url": "https://example.com/form",
+                    "source_level": 2,
+                },
+                {
+                    "claim": "Mexico City venue favors the home side.",
+                    "source_name": "venue",
+                    "source_url": "https://example.com/venue",
+                    "source_level": 3,
+                },
+                {
+                    "claim": "South Africa defensive record is mixed.",
+                    "source_name": "defense",
+                    "source_url": "https://example.com/defense",
+                    "source_level": 2,
+                },
+            ],
+            "uncertainties": ["Lineup is not fully confirmed."],
+            "model_meta": {
+                "provider": "static-test",
+                "model_name": "static-test-model",
+                "predicted_at": "2026-04-19T12:00:00Z",
+            },
+            "input_snapshot": match_facts,
+        }
+
+
 def test_predict_endpoint_returns_prediction_and_persists_version_history():
     runtime_dir = _runtime_dir("predict")
     fixture_path = runtime_dir / "schedule.json"
@@ -85,8 +126,12 @@ def test_predict_endpoint_returns_prediction_and_persists_version_history():
         fixture_seed_path=str(fixture_path),
         prediction_openrouter_model_config_path=None,
         prediction_openrouter_key_path=None,
+        prediction_research_openrouter_model_config_path=None,
+        prediction_research_openrouter_key_path=None,
+        prediction_evidence_openrouter_model_config_path=None,
+        prediction_evidence_openrouter_key_path=None,
     )
-    app = create_app(settings)
+    app = create_app(settings, prediction_provider=StaticPredictionProvider())
 
     with TestClient(app) as client:
         first_response = client.post("/api/predict/fwc2026-m001")
@@ -115,6 +160,31 @@ def test_predict_endpoint_returns_prediction_and_persists_version_history():
     assert versions[0].match_id == "fwc2026-m001"
 
 
+def test_predict_endpoint_returns_502_when_decider_provider_is_not_configured():
+    runtime_dir = _runtime_dir("predict_missing_provider")
+    fixture_path = runtime_dir / "schedule.json"
+    _write_fixture(fixture_path)
+    database_path = runtime_dir / "predict_missing_provider.db"
+    settings = Settings(
+        database_url=f"sqlite:///{database_path}",
+        enable_fixture_seed=True,
+        fixture_seed_path=str(fixture_path),
+        prediction_openrouter_model_config_path=None,
+        prediction_openrouter_key_path=None,
+        prediction_research_openrouter_model_config_path=None,
+        prediction_research_openrouter_key_path=None,
+        prediction_evidence_openrouter_model_config_path=None,
+        prediction_evidence_openrouter_key_path=None,
+    )
+    app = create_app(settings)
+
+    with TestClient(app) as client:
+        response = client.post("/api/predict/fwc2026-m001")
+
+    assert response.status_code == 502
+    assert "decider" in response.json()["detail"].lower()
+
+
 def test_predict_endpoint_rejects_matches_that_have_started():
     runtime_dir = _runtime_dir("predict_started")
     fixture_path = runtime_dir / "schedule.json"
@@ -126,6 +196,10 @@ def test_predict_endpoint_rejects_matches_that_have_started():
         fixture_seed_path=str(fixture_path),
         prediction_openrouter_model_config_path=None,
         prediction_openrouter_key_path=None,
+        prediction_research_openrouter_model_config_path=None,
+        prediction_research_openrouter_key_path=None,
+        prediction_evidence_openrouter_model_config_path=None,
+        prediction_evidence_openrouter_key_path=None,
     )
     app = create_app(settings)
 

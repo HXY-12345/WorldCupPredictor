@@ -81,8 +81,11 @@ export function createWorldCupApp({
     loading: false,
     refreshing: false,
     pendingPredictionId: null,
+    pendingPredictionRunMatchId: null,
     selectedDate: null,
     collapsedDates: new Set(),
+    predictionRunDetails: {},
+    expandedPredictionRunMatchIds: new Set(),
     analyticsSummary: null,
     analyticsByStage: null
   };
@@ -168,8 +171,20 @@ export function createWorldCupApp({
     render();
   }
 
+  async function fetchLatestPredictionRunDetail(matchId) {
+    const runListResult = await api.fetchPredictionRuns(matchId);
+    const latestRun = runListResult.items[0];
+
+    if (!latestRun) {
+      return null;
+    }
+
+    return api.fetchPredictionRunDetail(latestRun.id);
+  }
+
   async function handlePredict(matchId) {
     state.pendingPredictionId = matchId;
+    state.pendingPredictionRunMatchId = matchId;
     state.error = "";
     render();
 
@@ -178,11 +193,64 @@ export function createWorldCupApp({
       state.matches = mergePredictionIntoMatches(state.matches, result.matchId, result.prediction);
       if (result.source === "fallback") {
         state.source = "fallback";
+      } else {
+        const predictionRunDetail = await fetchLatestPredictionRunDetail(result.matchId);
+        if (predictionRunDetail) {
+          state.predictionRunDetails = {
+            ...state.predictionRunDetails,
+            [result.matchId]: predictionRunDetail
+          };
+          const nextExpandedPredictionRunMatchIds = new Set(state.expandedPredictionRunMatchIds);
+          nextExpandedPredictionRunMatchIds.add(result.matchId);
+          state.expandedPredictionRunMatchIds = nextExpandedPredictionRunMatchIds;
+        }
       }
     } catch (error) {
       state.error = error instanceof Error ? error.message : "AI 预测暂时不可用。";
     } finally {
       state.pendingPredictionId = null;
+      state.pendingPredictionRunMatchId = null;
+      render();
+    }
+  }
+
+  async function handleTogglePredictionRun(matchId) {
+    const nextExpandedPredictionRunMatchIds = new Set(state.expandedPredictionRunMatchIds);
+
+    if (nextExpandedPredictionRunMatchIds.has(matchId)) {
+      nextExpandedPredictionRunMatchIds.delete(matchId);
+      state.expandedPredictionRunMatchIds = nextExpandedPredictionRunMatchIds;
+      render();
+      return;
+    }
+
+    if (state.predictionRunDetails[matchId]) {
+      nextExpandedPredictionRunMatchIds.add(matchId);
+      state.expandedPredictionRunMatchIds = nextExpandedPredictionRunMatchIds;
+      render();
+      return;
+    }
+
+    state.pendingPredictionRunMatchId = matchId;
+    state.error = "";
+    render();
+
+    try {
+      const predictionRunDetail = await fetchLatestPredictionRunDetail(matchId);
+      if (!predictionRunDetail) {
+        throw new Error("当前还没有可查看的预测依据。");
+      }
+
+      state.predictionRunDetails = {
+        ...state.predictionRunDetails,
+        [matchId]: predictionRunDetail
+      };
+      nextExpandedPredictionRunMatchIds.add(matchId);
+      state.expandedPredictionRunMatchIds = nextExpandedPredictionRunMatchIds;
+    } catch (error) {
+      state.error = error instanceof Error ? error.message : "预测依据暂时不可用。";
+    } finally {
+      state.pendingPredictionRunMatchId = null;
       render();
     }
   }
@@ -200,7 +268,9 @@ export function createWorldCupApp({
   }
 
   function handleScheduleClick(event) {
-    const target = event.target.closest("[data-date-toggle], [data-predict-match]");
+    const target = event.target.closest(
+      "[data-date-toggle], [data-predict-match], [data-toggle-prediction-run]"
+    );
 
     if (!target) {
       return;
@@ -213,6 +283,11 @@ export function createWorldCupApp({
 
     if (target.hasAttribute("data-predict-match")) {
       handlePredict(target.getAttribute("data-predict-match"));
+      return;
+    }
+
+    if (target.hasAttribute("data-toggle-prediction-run")) {
+      handleTogglePredictionRun(target.getAttribute("data-toggle-prediction-run"));
     }
   }
 
@@ -262,7 +337,8 @@ export function createWorldCupApp({
     destroy,
     loadMatches,
     toggleDate,
-    handlePredict
+    handlePredict,
+    handleTogglePredictionRun
   };
 }
 

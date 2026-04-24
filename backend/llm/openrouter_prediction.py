@@ -48,11 +48,45 @@ class OpenRouterPredictionProvider(PredictionProvider):
 
     def predict(self, request: PredictionRequest) -> dict[str, Any]:
         try:
-            payload = self.client.create_chat_completion(
-                messages=request.messages,
+            payload = self._request_prediction(
+                request.messages,
                 response_format=request.response_format,
                 plugins=request.plugins,
                 provider=request.provider,
+            )
+            prediction = _parse_prediction_payload(payload)
+        except PredictionProviderResponseError:
+            if self.settings.enable_response_healing or _has_response_healing_plugin(request.plugins):
+                raise
+            payload = self._request_prediction(
+                request.messages,
+                response_format=request.response_format,
+                plugins=_with_response_healing_plugin(request.plugins),
+                provider=request.provider,
+            )
+            prediction = _parse_prediction_payload(payload)
+
+        if not isinstance(prediction, dict):
+            raise PredictionProviderResponseError("OpenRouter prediction response must be a JSON object.")
+
+        _fill_model_meta(prediction, payload, self.settings)
+        _fill_input_snapshot(prediction, request)
+        return prediction
+
+    def _request_prediction(
+        self,
+        messages: list[dict[str, Any]],
+        *,
+        response_format: dict[str, Any] | None,
+        plugins: list[dict[str, Any]],
+        provider: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        try:
+            return self.client.create_chat_completion(
+                messages=messages,
+                response_format=response_format,
+                plugins=plugins,
+                provider=provider,
             )
         except httpx.TimeoutException as error:
             raise PredictionProviderTimeoutError(f"OpenRouter prediction request timed out: {error}") from error
@@ -66,19 +100,6 @@ class OpenRouterPredictionProvider(PredictionProvider):
             raise PredictionProviderResponseError(f"OpenRouter prediction request failed: {error}") from error
         except json.JSONDecodeError as error:
             raise PredictionProviderResponseError("OpenRouter prediction response was not valid JSON.") from error
-
-        completion_text = _extract_completion_text(payload)
-        try:
-            prediction = coerce_prediction_payload(completion_text)
-        except ValueError as error:
-            raise PredictionProviderResponseError("OpenRouter prediction response was not valid JSON.") from error
-
-        if not isinstance(prediction, dict):
-            raise PredictionProviderResponseError("OpenRouter prediction response must be a JSON object.")
-
-        _fill_model_meta(prediction, payload, self.settings)
-        _fill_input_snapshot(prediction, request)
-        return prediction
 
 
 def build_default_prediction_provider(settings: Settings) -> PredictionProvider | None:
@@ -119,6 +140,27 @@ def _extract_completion_text(payload: dict[str, Any]) -> str:
             return "".join(text_parts)
 
     raise PredictionProviderResponseError("OpenRouter prediction response content was not parseable text.")
+
+
+def _parse_prediction_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    completion_text = _extract_completion_text(payload)
+    try:
+        prediction = coerce_prediction_payload(completion_text)
+    except ValueError as error:
+        raise PredictionProviderResponseError("OpenRouter prediction response was not valid JSON.") from error
+    if not isinstance(prediction, dict):
+        raise PredictionProviderResponseError("OpenRouter prediction response must be a JSON object.")
+    return prediction
+
+
+def _has_response_healing_plugin(plugins: list[dict[str, Any]]) -> bool:
+    return any(plugin.get("id") == "response-healing" for plugin in plugins)
+
+
+def _with_response_healing_plugin(plugins: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if _has_response_healing_plugin(plugins):
+        return list(plugins)
+    return [*plugins, {"id": "response-healing"}]
 
 
 def _fill_model_meta(

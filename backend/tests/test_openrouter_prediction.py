@@ -5,6 +5,7 @@ import json
 import httpx
 import pytest
 
+from backend.llm.openrouter import OpenRouterClient
 from backend.llm.openrouter import OpenRouterSettings
 from backend.llm.openrouter_prediction import OpenRouterPredictionProvider
 from backend.llm.provider import PredictionProviderResponseError
@@ -58,6 +59,30 @@ class DummyOpenRouterClient:
         if self.error is not None:
             raise self.error
         return self.payload
+
+
+class SequencedOpenRouterClient:
+    def __init__(self, payloads: list[dict]) -> None:
+        self.payloads = list(payloads)
+        self.calls: list[dict] = []
+
+    def create_chat_completion(self, **kwargs):
+        self.calls.append(kwargs)
+        return self.payloads.pop(0)
+
+
+class DummyHttpxClient:
+    def __init__(self, response: httpx.Response) -> None:
+        self.response = response
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def post(self, url: str, *, headers: dict | None = None, json: dict | None = None) -> httpx.Response:
+        return self.response
 
 
 def _prediction_payload() -> dict:
@@ -316,3 +341,63 @@ def test_openrouter_prediction_provider_normalizes_text_confidence_and_string_te
     assert parsed.confidence == 35
     assert parsed.input_snapshot.home_team == {"name": "Mexico"}
     assert parsed.input_snapshot.away_team == {"name": "South Africa"}
+
+
+def test_openrouter_prediction_provider_retries_with_response_healing_after_invalid_json():
+    request = build_prediction_request(
+        _context(),
+        enable_web_plugin=False,
+        enable_response_healing=False,
+        use_response_format=False,
+    )
+    client = SequencedOpenRouterClient(
+        payloads=[
+            {
+                "model": "qwen/qwen3.5-flash-20260224",
+                "choices": [{"message": {"content": "not-json"}}],
+            },
+            {
+                "model": "qwen/qwen3.5-flash-20260224",
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(_prediction_payload(), ensure_ascii=False),
+                        }
+                    }
+                ],
+            },
+        ]
+    )
+    settings = OpenRouterSettings(
+        base_url="https://openrouter.ai/api/v1/chat/completions",
+        model="qwen/qwen3.5-flash-20260224",
+        api_key="sk-or-v1-test-key",
+        enable_response_healing=False,
+    )
+    provider = OpenRouterPredictionProvider(settings, client=client)
+
+    result = provider.predict(request)
+
+    assert result["predicted_score"]["home"] == 2
+    assert len(client.calls) == 2
+    assert client.calls[1]["plugins"] == [{"id": "response-healing"}]
+
+
+def test_openrouter_prediction_provider_maps_empty_openrouter_body_to_response_error(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    request = build_prediction_request(_context())
+    response = httpx.Response(
+        status_code=200,
+        request=httpx.Request("POST", _settings().base_url),
+        content=b"",
+    )
+    dummy_client = DummyHttpxClient(response)
+    monkeypatch.setattr("backend.llm.openrouter.httpx.Client", lambda timeout: dummy_client)
+
+    provider = OpenRouterPredictionProvider(_settings(), client=OpenRouterClient(_settings()))
+
+    with pytest.raises(PredictionProviderResponseError) as exc_info:
+        provider.predict(request)
+
+    assert "JSON" in str(exc_info.value)

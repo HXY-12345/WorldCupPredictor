@@ -71,6 +71,10 @@ def test_predict_endpoint_returns_502_when_provider_fails():
         database_url=f"sqlite:///{database_path}",
         enable_fixture_seed=True,
         fixture_seed_path=str(fixture_path),
+        prediction_research_openrouter_model_config_path=None,
+        prediction_research_openrouter_key_path=None,
+        prediction_evidence_openrouter_model_config_path=None,
+        prediction_evidence_openrouter_key_path=None,
     )
     app = create_app(settings, prediction_provider=ExplodingPredictionProvider())
 
@@ -89,6 +93,10 @@ def test_predict_endpoint_returns_409_when_prediction_is_already_running():
         database_url=f"sqlite:///{database_path}",
         enable_fixture_seed=True,
         fixture_seed_path=str(fixture_path),
+        prediction_research_openrouter_model_config_path=None,
+        prediction_research_openrouter_key_path=None,
+        prediction_evidence_openrouter_model_config_path=None,
+        prediction_evidence_openrouter_key_path=None,
     )
     app = create_app(settings, prediction_guard=BusyPredictionGuard())
 

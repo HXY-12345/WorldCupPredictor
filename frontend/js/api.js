@@ -86,6 +86,59 @@ function normalizeMatchesPayload(payload, source, error = "") {
   };
 }
 
+function normalizePredictionRunSummary(item) {
+  return {
+    id: item?.id ?? "",
+    match_id: item?.match_id ?? "",
+    triggered_at: item?.triggered_at ?? null,
+    finished_at: item?.finished_at ?? null,
+    status: item?.status ?? "unknown",
+    prediction_version_id: item?.prediction_version_id ?? null,
+    planner_model: item?.planner_model ?? null,
+    synthesizer_model: item?.synthesizer_model ?? null,
+    decider_model: item?.decider_model ?? null,
+    elapsed_ms: Number.isFinite(item?.elapsed_ms) ? item.elapsed_ms : null,
+    document_count: Number.isFinite(item?.document_count) ? item.document_count : 0,
+    used_fallback_sources: Boolean(item?.used_fallback_sources),
+    error_message: item?.error_message ?? null
+  };
+}
+
+function normalizePredictionRunListPayload(payload, source, error = "") {
+  const items = Array.isArray(payload?.items)
+    ? payload.items.map(normalizePredictionRunSummary)
+    : [];
+
+  return {
+    items,
+    total: Number.isFinite(payload?.total) ? payload.total : items.length,
+    source,
+    error
+  };
+}
+
+function normalizePredictionRunDetailPayload(payload, source) {
+  return {
+    ...normalizePredictionRunSummary(payload),
+    source,
+    search_plan_json:
+      payload?.search_plan_json && typeof payload.search_plan_json === "object"
+        ? cloneData(payload.search_plan_json)
+        : null,
+    search_trace_json:
+      payload?.search_trace_json && typeof payload.search_trace_json === "object"
+        ? cloneData(payload.search_trace_json)
+        : null,
+    search_documents_json: Array.isArray(payload?.search_documents_json)
+      ? cloneData(payload.search_documents_json)
+      : [],
+    evidence_bundle_json:
+      payload?.evidence_bundle_json && typeof payload.evidence_bundle_json === "object"
+        ? cloneData(payload.evidence_bundle_json)
+        : null
+  };
+}
+
 function normalizeDimension(dimension) {
   return {
     hit: Number.isFinite(dimension?.hit) ? dimension.hit : 0,
@@ -256,6 +309,20 @@ export function createApiClient({
           source: "fallback"
         };
       }
+    },
+
+    async fetchPredictionRuns(matchId) {
+      const payload = await requestJson(
+        `/api/matches/${encodeURIComponent(matchId)}/prediction-runs`
+      );
+      return normalizePredictionRunListPayload(payload, "api");
+    },
+
+    async fetchPredictionRunDetail(runId) {
+      const payload = await requestJson(
+        `/api/prediction-runs/${encodeURIComponent(runId)}`
+      );
+      return normalizePredictionRunDetailPayload(payload, "api");
     },
 
     async fetchAnalyticsSummary() {

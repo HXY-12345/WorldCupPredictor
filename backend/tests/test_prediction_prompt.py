@@ -35,6 +35,14 @@ def test_build_prediction_system_prompt_requires_fact_only_chinese_output():
     assert "Chinese" in prompt
 
 
+def test_build_prediction_system_prompt_forbids_echoing_request_wrapper_into_input_snapshot():
+    prompt = build_prediction_system_prompt()
+
+    assert "input_snapshot must contain only the match_facts object" in prompt
+    assert "Do not copy the outer request payload" in prompt
+    assert "Keep reasoning_summary concise" in prompt
+
+
 def test_build_prediction_user_prompt_includes_match_facts_without_history():
     prompt = build_prediction_user_prompt(_context())
 

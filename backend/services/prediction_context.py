@@ -22,6 +22,7 @@ def build_prediction_context(
     match_id: str,
     *,
     recent_prediction_limit: int = 3,
+    database_context: dict[str, Any] | None = None,
 ) -> PredictionContext:
     """从数据库构建仅包含比赛事实的预测上下文。"""
 
@@ -34,7 +35,7 @@ def build_prediction_context(
 
         return PredictionContext(
             match_facts=_serialize_match(match),
-            database_context={},
+            database_context=deepcopy(database_context) if isinstance(database_context, dict) else {},
         )
 
 

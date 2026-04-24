@@ -1,4 +1,4 @@
-"""核心功能：定义应用默认配置、环境变量配置与项目路径常量。"""
+"""核心功能：定义应用默认配置、环境变量映射以及项目级路径常量。"""
 
 from functools import lru_cache
 from pathlib import Path
@@ -14,6 +14,12 @@ DEFAULT_PREDICTION_OPENROUTER_MODEL_CONFIG_PATH = (
     PROJECT_ROOT / "backend" / "config" / "openrouter.prediction.model.json"
 )
 DEFAULT_PREDICTION_OPENROUTER_KEY_PATH = PROJECT_ROOT / "backend" / "config" / "openrouter.prediction.key"
+DEFAULT_PREDICTION_RESEARCH_OPENROUTER_MODEL_CONFIG_PATH = (
+    PROJECT_ROOT / "backend" / "config" / "openrouter.research.model.json"
+)
+DEFAULT_PREDICTION_EVIDENCE_OPENROUTER_MODEL_CONFIG_PATH = (
+    PROJECT_ROOT / "backend" / "config" / "openrouter.evidence.model.json"
+)
 DEFAULT_FIFA_ARTICLE_URL = (
     "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/"
     "articles/match-schedule-fixtures-results-teams-stadiums"
@@ -42,6 +48,21 @@ class Settings(BaseSettings):
     prediction_openrouter_model_config_path: str | None = str(DEFAULT_PREDICTION_OPENROUTER_MODEL_CONFIG_PATH)
     prediction_openrouter_key_path: str | None = str(DEFAULT_PREDICTION_OPENROUTER_KEY_PATH)
     prediction_request_timeout_seconds: float = 90.0
+    prediction_research_openrouter_model_config_path: str | None = str(
+        DEFAULT_PREDICTION_RESEARCH_OPENROUTER_MODEL_CONFIG_PATH
+    )
+    prediction_research_openrouter_key_path: str | None = str(DEFAULT_OPENROUTER_KEY_PATH)
+    prediction_research_request_timeout_seconds: float = 45.0
+    prediction_research_duckduckgo_enabled: bool = True
+    prediction_research_duckduckgo_timeout_seconds: float = 5.0
+    prediction_research_duckduckgo_max_rounds: int = 4
+    prediction_research_duckduckgo_max_results_per_query: int = 5
+    prediction_research_duckduckgo_backend: str = "duckduckgo,mojeek"
+    prediction_evidence_openrouter_model_config_path: str | None = str(
+        DEFAULT_PREDICTION_EVIDENCE_OPENROUTER_MODEL_CONFIG_PATH
+    )
+    prediction_evidence_openrouter_key_path: str | None = str(DEFAULT_OPENROUTER_KEY_PATH)
+    prediction_evidence_request_timeout_seconds: float = 45.0
 
 
 @lru_cache

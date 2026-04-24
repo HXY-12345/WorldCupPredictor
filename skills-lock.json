@@ -20,6 +20,11 @@
       "source": "nextlevelbuilder/ui-ux-pro-max-skill",
       "sourceType": "github",
       "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    },
+    "web-access": {
+      "source": "eze-is/web-access",
+      "sourceType": "github",
+      "computedHash": "f7f27864fbf36e9c0a5a554ace5eb8a60e40fe17c7459fc54938d3e4a8104259"
     }
   }
 }

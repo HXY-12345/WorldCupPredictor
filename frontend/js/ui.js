@@ -237,7 +237,141 @@ function renderPredictionEvidence(prediction) {
   `;
 }
 
-function renderPredictionCard(match, pendingPredictionId) {
+function renderPredictionRunFactGrid(predictionRunDetail) {
+  const items = [
+    {
+      label: "执行时间",
+      value: predictionRunDetail?.triggered_at
+        ? formatUpdatedTime(predictionRunDetail.triggered_at)
+        : "--"
+    },
+    {
+      label: "研究模型",
+      value: predictionRunDetail?.planner_model ?? "--"
+    },
+    {
+      label: "证据模型",
+      value: predictionRunDetail?.synthesizer_model ?? "--"
+    },
+    {
+      label: "最终模型",
+      value: predictionRunDetail?.decider_model ?? "--"
+    },
+    {
+      label: "参考文档",
+      value: String(predictionRunDetail?.document_count ?? 0)
+    },
+    {
+      label: "补充来源",
+      value: predictionRunDetail?.used_fallback_sources ? "已使用" : "未使用"
+    }
+  ];
+
+  return `
+    <div class="prediction-run__meta-grid">
+      ${items
+        .map(
+          (item) => `
+            <div class="prediction-run__meta-card">
+              <span class="prediction-run__meta-label">${escapeHtml(item.label)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderPredictionRunDocuments(predictionRunDetail) {
+  const documents = safeArray(predictionRunDetail?.search_documents_json).slice(0, 2);
+
+  if (!documents.length) {
+    return "";
+  }
+
+  return `
+    <div class="prediction-run__group">
+      <span class="prediction-run__title">参考文档</span>
+      <ul class="prediction-run__list">
+        ${documents
+          .map(
+            (document) => `
+              <li>
+                <strong>${escapeHtml(document.title ?? "未命名文档")}</strong>
+                <span>${escapeHtml(document.domain ?? "--")}</span>
+              </li>
+            `
+          )
+          .join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function renderPredictionRunEvidenceBundle(predictionRunDetail) {
+  const evidenceBundle = predictionRunDetail?.evidence_bundle_json;
+  const summaryItems = safeArray(evidenceBundle?.high_confidence_summary).slice(0, 2);
+  const conflictItems = safeArray(evidenceBundle?.conflicts).slice(0, 2);
+
+  if (!summaryItems.length && !conflictItems.length) {
+    return "";
+  }
+
+  return `
+    <div class="prediction-run__columns">
+      ${
+        summaryItems.length
+          ? `
+            <div class="prediction-run__group">
+              <span class="prediction-run__title">高置信摘要</span>
+              <ul class="prediction-run__list">
+                ${summaryItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+          `
+          : ""
+      }
+      ${
+        conflictItems.length
+          ? `
+            <div class="prediction-run__group">
+              <span class="prediction-run__title">冲突因素</span>
+              <ul class="prediction-run__list">
+                ${conflictItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+              </ul>
+            </div>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderPredictionRunDetail(predictionRunDetail) {
+  if (!predictionRunDetail) {
+    return "";
+  }
+
+  return `
+    <section class="prediction-run">
+      <div class="prediction-run__header">
+        <span class="prediction-run__eyebrow">本次预测依据</span>
+      </div>
+      ${renderPredictionRunFactGrid(predictionRunDetail)}
+      ${renderPredictionRunDocuments(predictionRunDetail)}
+      ${renderPredictionRunEvidenceBundle(predictionRunDetail)}
+    </section>
+  `;
+}
+
+function renderPredictionCard(
+  match,
+  pendingPredictionId,
+  predictionRunDetail,
+  isPredictionRunExpanded,
+  isPredictionRunLoading
+) {
   const isPending = pendingPredictionId === match.id;
   const prediction = match.prediction;
 
@@ -266,14 +400,31 @@ function renderPredictionCard(match, pendingPredictionId) {
     <section class="prediction-card">
       <div class="prediction-card__header">
         <span class="prediction-card__eyebrow">AI 预测</span>
-        <button
-          type="button"
-          class="chip-button"
-          data-predict-match="${escapeHtml(match.id)}"
-          ${isPending ? "disabled" : ""}
-        >
-          ${isPending ? "预测中..." : "刷新 AI 预测"}
-        </button>
+        <div class="prediction-card__actions">
+          <button
+            type="button"
+            class="chip-button"
+            data-predict-match="${escapeHtml(match.id)}"
+            ${isPending ? "disabled" : ""}
+          >
+            ${isPending ? "预测中..." : "刷新 AI 预测"}
+          </button>
+          <button
+            type="button"
+            class="chip-button chip-button--secondary"
+            data-toggle-prediction-run="${escapeHtml(match.id)}"
+            ${isPredictionRunLoading ? "disabled" : ""}
+            aria-expanded="${isPredictionRunExpanded ? "true" : "false"}"
+          >
+            ${
+              isPredictionRunLoading
+                ? "加载依据..."
+                : isPredictionRunExpanded
+                  ? "收起预测依据"
+                  : "查看预测依据"
+            }
+          </button>
+        </div>
       </div>
 
       <div class="prediction-card__scoreboard">
@@ -305,6 +456,7 @@ function renderPredictionCard(match, pendingPredictionId) {
       <p class="prediction-card__reasoning">${escapeHtml(prediction.reasoning ?? "暂无推理摘要。")}</p>
 
       ${renderPredictionEvidence(prediction)}
+      ${isPredictionRunExpanded ? renderPredictionRunDetail(predictionRunDetail) : ""}
     </section>
   `;
 }
@@ -349,7 +501,13 @@ function renderSupportingInfo(match) {
   `;
 }
 
-function renderMatchCard(match, pendingPredictionId) {
+function renderMatchCard(
+  match,
+  pendingPredictionId,
+  predictionRunDetail,
+  isPredictionRunExpanded,
+  isPredictionRunLoading
+) {
   const statusMeta = getStatusMeta(match.status);
   const score = renderScore(match);
   const timeLabel = match.time ?? "--:--";
@@ -402,13 +560,26 @@ function renderMatchCard(match, pendingPredictionId) {
           ${renderSupportingInfo(match)}
         </div>
 
-        ${renderPredictionCard(match, pendingPredictionId)}
+        ${renderPredictionCard(
+          match,
+          pendingPredictionId,
+          predictionRunDetail,
+          isPredictionRunExpanded,
+          isPredictionRunLoading
+        )}
       </div>
     </article>
   `;
 }
 
-function renderDateSection(group, collapsedDates, pendingPredictionId) {
+function renderDateSection(
+  group,
+  collapsedDates,
+  pendingPredictionId,
+  predictionRunDetails,
+  expandedPredictionRunMatchIds,
+  pendingPredictionRunMatchId
+) {
   const isCollapsed = collapsedDates.has(group.date);
 
   return `
@@ -426,7 +597,17 @@ function renderDateSection(group, collapsedDates, pendingPredictionId) {
         <span class="date-group__toggle">${isCollapsed ? "展开" : "收起"}</span>
       </button>
       <div class="date-group__content ${isCollapsed ? "is-collapsed" : ""}">
-        ${group.matches.map((match) => renderMatchCard(match, pendingPredictionId)).join("")}
+        ${group.matches
+          .map((match) =>
+            renderMatchCard(
+              match,
+              pendingPredictionId,
+              predictionRunDetails?.[match.id] ?? null,
+              expandedPredictionRunMatchIds.has(match.id),
+              pendingPredictionRunMatchId === match.id
+            )
+          )
+          .join("")}
       </div>
     </section>
   `;
@@ -792,7 +973,10 @@ export function renderScheduleMarkup({
   loading = false,
   selectedDate = null,
   collapsedDates = new Set(),
-  pendingPredictionId = null
+  pendingPredictionId = null,
+  predictionRunDetails = {},
+  expandedPredictionRunMatchIds = new Set(),
+  pendingPredictionRunMatchId = null
 } = {}) {
   if (loading && !matches.length) {
     return renderLoadingMarkup();
@@ -813,6 +997,15 @@ export function renderScheduleMarkup({
   }
 
   return groups
-    .map((group) => renderDateSection(group, collapsedDates, pendingPredictionId))
+    .map((group) =>
+      renderDateSection(
+        group,
+        collapsedDates,
+        pendingPredictionId,
+        predictionRunDetails,
+        expandedPredictionRunMatchIds,
+        pendingPredictionRunMatchId
+      )
+    )
     .join("");
 }
